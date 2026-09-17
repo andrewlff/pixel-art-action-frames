@@ -1,0 +1,73 @@
+{
+	"type": "pixel_art_batch_sprite_sheet",
+	"sheet": "orbs_sheet.png",
+	"cols": 6,
+	"rows": 1,
+	"cell_w": 512,
+	"cell_h": 504,
+	"frame_ms": 120,
+	"loop": true,
+	"alpha": true,
+	"frames": [
+		{
+			"name": "orbs_1",
+			"index": 0,
+			"rect": [
+				0,
+				0,
+				512,
+				504
+			]
+		},
+		{
+			"name": "orbs_2",
+			"index": 1,
+			"rect": [
+				512,
+				0,
+				512,
+				504
+			]
+		},
+		{
+			"name": "orbs_3",
+			"index": 2,
+			"rect": [
+				1024,
+				0,
+				512,
+				504
+			]
+		},
+		{
+			"name": "orbs_4",
+			"index": 3,
+			"rect": [
+				1536,
+				0,
+				512,
+				504
+			]
+		},
+		{
+			"name": "orbs_5",
+			"index": 4,
+			"rect": [
+				2048,
+				0,
+				512,
+				504
+			]
+		},
+		{
+			"name": "orbs_6",
+			"index": 5,
+			"rect": [
+				2560,
+				0,
+				512,
+				504
+			]
+		}
+	]
+}
