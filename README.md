@@ -10,6 +10,17 @@
 - 📦 **引擎友好**：输出 `pixel_art_batch_sprite_sheet` 清单（`cols/rows/cell_w/cell_h/frame_ms/loop/alpha/frames[i].rect`），按 rect 直接切图
 - 🧩 **零依赖**：全部脚本只用 Python 标准库，任何机器可直接运行
 
+## 2026-09-21 更新
+
+新增 4 个工具脚本，和 Web 版 Pixelizer 对齐：
+
+| 脚本 | 功能 |
+|---|---|
+| `split_sheet.py` | 把一张 sprite sheet 大图按 cols×rows 自动切成单帧 PNG |
+| `video_to_frames.py` | 视频抽帧（依赖 ffmpeg），按采样帧率导出 PNG 序列 |
+| `palette_lock.py` | 色板提取/导出 .gpl/批量锁定色板（多帧色调统一） |
+| `chroma_key.py` | 绿幕/白地/黑地一键去背（含溢色抑制） |
+
 ## 快速开始
 
 ```bash
@@ -21,6 +32,19 @@ python scripts/transparent_frames.py raw_frames/ out/ attack
 
 # 3. 透明动画 GIF：读 out/attack_1..6.png → out/attack_sheet.gif
 python scripts/build_gif.py out/ attack
+
+# 4. 拆分 sprite sheet
+python scripts/split_sheet.py walk_sheet.png --cols 4 --rows 4 --out frames/
+
+# 5. 视频抽帧
+python scripts/video_to_frames.py walk.mp4 --fps 8 --out frames/
+
+# 6. 色板锁定
+python scripts/palette_lock.py extract frame_000.png --palette palette.gpl
+python scripts/palette_lock.py batch frames/ --out frames_q/
+
+# 7. 绿幕去背
+python scripts/chroma_key.py green_screen.png --mode green --out transparent.png
 ```
 
 ## 目录结构
@@ -28,10 +52,14 @@ python scripts/build_gif.py out/ attack
 ```
 pixel-art-action-frames/
 ├── scripts/
-│   ├── pixel_core.py            # 核心算法库（PNG 编解码/去水印/flood-fill去背景/量化/描边）
+│   ├── pixel_core.py            # 核心算法库（PNG 编解码/去水印/flood-fill去背景/量化/描边/色键/色板）
 │   ├── pixelate.py              # 角色/单图批量像素化 CLI
 │   ├── transparent_frames.py    # 6帧动作序列 → 去背景+像素化+图集+JSON
-│   └── build_gif.py             # 透明动画 GIF 编码器（disposal=2 + 全局色表）
+│   ├── build_gif.py             # 透明动画 GIF 编码器（disposal=2 + 全局色表）
+│   ├── split_sheet.py           # Sprite Sheet 拆分器（cols×rows → 单帧）
+│   ├── video_to_frames.py       # 视频抽帧（ffmpeg）
+│   ├── palette_lock.py          # 色板提取/导出/批量锁定
+│   └── chroma_key.py            # 绿幕/白地/黑地去背
 └── examples/
     ├── characters/              # 4 个角色的像素化示例（orbs/bone/palm/ghost）
     └── orbs/                    # 攻击动作帧示例：图集 + JSON 清单 + 动画 GIF

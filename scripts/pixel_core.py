@@ -337,3 +337,99 @@ def add_outline(pixels, line_color=(34, 24, 16, 255), threshold=0.30):
             if edge:
                 pixels[y][x] = (line_color[0], line_color[1], line_color[2], max(c[3], line_color[3]))
     return pixels
+
+
+# ---------------------------------------------------------------- 色键去背
+def chroma_key(px, w, h, key_color=(0, 255, 0), tolerance=25, spill_suppress=True):
+    """绿幕/色键去背：绿通道明显大于红蓝的像素变透明，可选溢色抑制。
+    key_color: (r,g,b) 要去除的背景色。tolerance: 容差。"""
+    kr, kg, kb = key_color
+    for y in range(h):
+        for x in range(w):
+            r, g, b, a = px[y][x]
+            if a == 0:
+                continue
+            d = ((r - kr) ** 2 + (g - kg) ** 2 + (b - kb) ** 2) ** 0.5
+            if d < tolerance * 4:
+                px[y][x] = (r, g, b, 0)
+            elif spill_suppress and g > r + 10 and g > b + 10:
+                # 溢色抑制：把绿色压到红蓝的最大值
+                m = max(r, b)
+                px[y][x] = (r, m, b, a)
+    return px
+
+
+def remove_flat_bg(px, w, h, mode="white", threshold=200):
+    """纯色背景去除：mode='white' 白地，'black' 黑地。"""
+    for y in range(h):
+        for x in range(w):
+            r, g, b, a = px[y][x]
+            if a == 0:
+                continue
+            if mode == "white" and r > threshold and g > threshold and b > threshold:
+                px[y][x] = (r, g, b, 0)
+            elif mode == "black" and r < (255 - threshold) and g < (255 - threshold) and b < (255 - threshold):
+                px[y][x] = (r, g, b, 0)
+    return px
+
+
+# ---------------------------------------------------------------- 色板锁定
+def extract_palette(px, w, h):
+    """从像素中提取唯一色板（不透明像素）。返回 [(r,g,b), ...]。"""
+    seen = set()
+    palette = []
+    for y in range(h):
+        for x in range(w):
+            r, g, b, a = px[y][x]
+            if a <= 127:
+                continue
+            key = (r, g, b)
+            if key not in seen:
+                seen.add(key)
+                palette.append((r, g, b))
+    return palette
+
+
+def quantize_to_palette(px, w, h, palette):
+    """把像素量化到指定色板（最近色匹配），不透明像素保留 alpha。"""
+    out = [[(0, 0, 0, 0)] * w for _ in range(h)]
+    for y in range(h):
+        for x in range(w):
+            r, g, b, a = px[y][x]
+            if a <= 127:
+                continue
+            best, best_d = palette[0], float("inf")
+            for p in palette:
+                d = (r - p[0]) ** 2 + (g - p[1]) ** 2 + (b - p[2]) ** 2
+                if d < best_d:
+                    best_d, best = d, p
+            out[y][x] = (best[0], best[1], best[2], a)
+    return out
+
+
+def save_gpl(path, palette, name="Pixelizer Palette"):
+    """导出 GIMP .gpl 调色板文件。"""
+    lines = ["GIMP Palette", f"Name: {name}", "#"]
+    for r, g, b in palette:
+        lines.append(f"  {r:3d}   {g:3d}   {b:3d}")
+    with open(path, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines) + "\n")
+
+
+# ---------------------------------------------------------------- Sprite Sheet 拆分
+def split_sheet(path, cols, rows, out_dir, prefix="frame"):
+    """把一张 sprite sheet 大图按 cols×rows 切成单帧 PNG。"""
+    px, w, h = load_png(path)
+    fw, fh = w // cols, h // rows
+    os.makedirs(out_dir, exist_ok=True)
+    paths = []
+    idx = 0
+    for r in range(rows):
+        for c in range(cols):
+            frame = [[px[y][x] for x in range(c * fw, (c + 1) * fw)]
+                     for y in range(r * fh, (r + 1) * fh)]
+            out_path = os.path.join(out_dir, f"{prefix}_{idx:03d}.png")
+            save_png(out_path, frame, fw, fh)
+            paths.append(out_path)
+            idx += 1
+    return paths, fw, fh
